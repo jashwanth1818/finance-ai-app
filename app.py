@@ -2,35 +2,26 @@ from flask import Flask, render_template, request, redirect
 import mysql.connector
 import os
 import matplotlib
-import models.advisor as advisor
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
 from models.expense_predictor import predict_expense
 from models.risk_detector import detect_risk
-
+from models.advisor import give_advice
 
 app = Flask(__name__)
 
-# ================= DATABASE CONNECTION =================
-from urllib.parse import urlparse
-import os
-import mysql.connector
-
+# 🔵 Railway DB Connection
 def get_connection():
-    db_url = os.getenv("DATABASE_URL")
-
-    url = urlparse(db_url)
-
     return mysql.connector.connect(
-        host=url.hostname,
-        user=url.username,
-        password=url.password,
-        database=url.path.replace("/", ""),
-        port=url.port if url.port else 3306   # ⭐ FINAL FIX
+        host=os.getenv("MYSQLHOST"),
+        user=os.getenv("MYSQLUSER"),
+        password=os.getenv("MYSQLPASSWORD"),
+        database=os.getenv("MYSQLDATABASE"),
+        port=int(os.getenv("MYSQLPORT"))
     )
 
-# ================= DASHBOARD =================
-
+# 🟢 Dashboard
 @app.route('/')
 def dashboard():
 
@@ -38,50 +29,62 @@ def dashboard():
     cursor = conn.cursor()
 
     cursor.execute("SELECT SUM(amount) FROM expenses WHERE type='income'")
-    total_income = cursor.fetchone()[0] or 0
+    income = cursor.fetchone()[0] or 0
 
     cursor.execute("SELECT SUM(amount) FROM expenses WHERE type='expense'")
-    total_expense = cursor.fetchone()[0] or 0
+    expense = cursor.fetchone()[0] or 0
 
-    savings = total_income - total_expense
+    savings = income - expense
 
-    cursor.execute("SELECT category, SUM(amount) FROM expenses WHERE type='expense' GROUP BY category")
-    category_data = cursor.fetchall()
+    cursor.execute("""
+        SELECT category, SUM(amount)
+        FROM expenses
+        WHERE type='expense'
+        GROUP BY category
+    """)
+    data = cursor.fetchall()
 
-    categories = [x[0] for x in category_data]
-    amounts = [float(x[1]) for x in category_data]
+    categories = [row[0] for row in data]
+    values = [float(row[1]) for row in data]
 
-    # CHART
-    if len(categories) > 0:
+    # 📊 Chart
+    if values:
         plt.figure()
-        plt.pie(amounts, labels=categories, autopct='%1.1f%%')
-        chart_path = os.path.join('static', 'chart.png')
-        plt.savefig(chart_path)
+        plt.pie(values, labels=categories, autopct='%1.1f%%')
+        plt.title("Expense Distribution")
+        plt.savefig('static/chart.png')
         plt.close()
 
-    prediction = predict_expense(amounts)
-    risk = detect_risk(total_income, total_expense)
-    advice = advisor.give_advice(categories, amounts)
+    # 🤖 AI Prediction
+    cursor.execute("SELECT amount FROM expenses WHERE type='expense'")
+    db_data = cursor.fetchall()
+
+    amounts = [float(row[0]) for row in db_data]
+
+    if len(amounts) > 2:
+        prediction = predict_expense(amounts)
+        risk = detect_risk(amounts)
+        advice = give_advice(income, expense)
+    else:
+        prediction = 0
+        risk = "Add more expenses"
+        advice = "Track spending to get advice"
+
     conn.close()
 
-    return render_template(
-        "dashboard.html",
-        income=total_income,
-        expense=total_expense,
-        savings=savings,
-        breakdown=category_data,
-        prediction=prediction,
-        risk=risk,
-        advice=advice
-    )
+    return render_template("dashboard.html",
+                           income=income,
+                           expense=expense,
+                           savings=savings,
+                           prediction=prediction,
+                           risk=risk,
+                           advice=advice)
 
-# ================= ADD EXPENSE =================
-
+# 🟢 Add Expense Page
 @app.route('/add', methods=['GET','POST'])
 def add_expense():
 
     if request.method == 'POST':
-
         amount = request.form['amount']
         category = request.form['category']
         type_ = request.form['type']
@@ -90,7 +93,7 @@ def add_expense():
         cursor = conn.cursor()
 
         cursor.execute(
-            "INSERT INTO expenses(amount,category,type) VALUES(%s,%s,%s)",
+            "INSERT INTO expenses (amount,category,type) VALUES (%s,%s,%s)",
             (amount,category,type_)
         )
 
@@ -101,9 +104,7 @@ def add_expense():
 
     return render_template("add_expense.html")
 
-# ================= RENDER PORT FIX =================
-
+# 🔴 Render Port Fix
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT",10000)))
 
