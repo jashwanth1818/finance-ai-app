@@ -2,11 +2,12 @@ from flask import Flask, render_template, request, redirect
 import mysql.connector
 import os
 import matplotlib
+import models.advisor as advisor
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from models.expense_predictor import predict_expense
 from models.risk_detector import detect_risk
-from models.advisor import give_advice
+
 
 app = Flask(__name__)
 
@@ -65,8 +66,7 @@ def dashboard():
 
     prediction = predict_expense(amounts)
     risk = detect_risk(total_income, total_expense)
-    advice = give_advice(categories, amounts)
-
+    advice = advisor.give_advice(categories, amounts)
     conn.close()
 
     return render_template(
