@@ -12,26 +12,19 @@ from models.risk_detector import detect_risk
 app = Flask(__name__)
 
 # ================= DATABASE CONNECTION =================
+from urllib.parse import urlparse
+import os
+import mysql.connector
 
 def get_connection():
-
-    host = os.getenv("MYSQLHOST") or "localhost"
-    user = os.getenv("MYSQLUSER") or "root"
-    password = os.getenv("MYSQLPASSWORD") or "Jashwantha18"   # 👈 your local password
-    database = os.getenv("MYSQLDATABASE") or "financial_analysis"
-    port = os.getenv("MYSQLPORT")
-
-    if port:
-        port = int(port)
-    else:
-        port = 3306
+    url = urlparse(os.getenv("DATABASE_URL"))
 
     return mysql.connector.connect(
-        host=host,
-        user=user,
-        password=password,
-        database=database,
-        port=port
+        host=url.hostname,
+        user=url.username,
+        password=url.password,
+        database=url.path[1:],
+        port=url.port
     )
 
 # ================= DASHBOARD =================
