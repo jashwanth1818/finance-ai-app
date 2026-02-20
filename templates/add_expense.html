@@ -1,4 +1,53 @@
-<form method="POST" action="/add">
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Expense</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+            width: 300px;
+            text-align: center;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px;
+            width: 100%;
+            background: orange;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Add Expense</h2>
+
+<form action="/add" method="POST">
 
     <input type="number"
            name="amount"
@@ -18,4 +67,9 @@
     <button type="submit">Add Expense</button>
 
 </form>
+
+</div>
+
+</body>
+</html>
 
