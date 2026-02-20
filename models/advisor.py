@@ -1,33 +1,12 @@
-import mysql.connector
+def give_advice(categories, amounts):
 
-def get_advice():
+    advice = []
 
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="Jashwanth@18",
-        database="financial_analysis"
-    )
+    for i in range(len(categories)):
+        if amounts[i] > 5000:
+            advice.append(f"High spending detected in {categories[i]}")
 
-    cursor = db.cursor()
+    if not advice:
+        advice.append("Your spending is under control")
 
-    cursor.execute("""
-        SELECT category, SUM(amount)
-        FROM expenses
-        GROUP BY category
-    """)
-    data = cursor.fetchall()
-
-    if not data:
-        return "No spending data available."
-
-    highest = max(data, key=lambda x: x[1])
-
-    category = highest[0]
-    amount = highest[1]
-
-    if amount > 7000:
-        return f"You are spending too much on {category}. Try reducing by 10-15%."
-
-    else:
-        return "Your spending looks balanced. Keep saving consistently!"
+    return advice
