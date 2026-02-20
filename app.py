@@ -85,6 +85,7 @@ def dashboard():
 def add_expense():
 
     if request.method == 'POST':
+
         amount = request.form['amount']
         category = request.form['category']
         type_ = request.form['type']
@@ -102,8 +103,8 @@ def add_expense():
         conn.close()
 
         return redirect('/')
-
-    return render_template("add_expense.html")
+    
+    return render_template('add_expense.html')
 
 # 🔴 Render Port Fix
 if __name__ == "__main__":

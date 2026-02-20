@@ -1,43 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Expense</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
+<form method="POST" action="/add">
 
-<body>
+    <input type="number"
+           name="amount"
+           placeholder="Enter Amount"
+           required>
 
-<div class="sidebar">
-    <h2>Finance AI</h2>
-    <a href="/">Dashboard</a>
-    <a href="/add_expense">Add Expense</a>
-</div>
+    <input type="text"
+           name="category"
+           placeholder="Enter Category"
+           required>
 
-<div class="main-content">
-
-<h1>Add Expense</h1>
-
-<div class="form-card">
-
-<form method="POST">
-
-    <input type="number" name="amount" placeholder="Enter Amount" required>
-
-    <input type="text" name="category" placeholder="Enter Category" required>
-
-    <select name="type" required>
-        <option value="income">Income</option>
-        <option value="expense">Expense</option>
+    <select name="type">
+        <option value="Expense">Expense</option>
+        <option value="Income">Income</option>
     </select>
 
     <button type="submit">Add Expense</button>
 
 </form>
-
-</div>
-
-</div>
-
-</body>
-</html>
 
