@@ -1,16 +1,15 @@
 # models/advisor.py
 
-def give_advice(categories, amounts):
-    advice = []
+def give_advice(income, expense):
 
-    try:
-        for i in range(len(categories)):
-            if float(amounts[i]) > 5000:
-                advice.append(f"High spending detected in {categories[i]}")
-    except:
-        pass
+    if income == 0:
+        return "No income data"
 
-    if not advice:
-        advice.append("Your spending is under control")
+    ratio = expense/income
 
-    return advice
+    if ratio > 0.7:
+        return "You are spending too much 😟"
+    elif ratio > 0.5:
+        return "Moderate spending 👍"
+    else:
+        return "Good savings habit 💰"
