@@ -21,16 +21,16 @@
 
 <form method="POST">
 
-<label>Category</label>
-<input type="text" name="category" required>
+    <input type="number" name="amount" placeholder="Enter Amount" required>
 
-<label>Amount</label>
-<input type="number" name="amount" required>
+    <input type="text" name="category" placeholder="Enter Category" required>
 
-<label>Date</label>
-<input type="date" name="date" required>
+    <select name="type" required>
+        <option value="income">Income</option>
+        <option value="expense">Expense</option>
+    </select>
 
-<button type="submit">Add Expense</button>
+    <button type="submit">Add Expense</button>
 
 </form>
 
