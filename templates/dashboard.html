@@ -1,9 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>FinSight - AI Finance Advisor</title>
+    <title>Finance Dashboard</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(to right,#4b4b6b,#8e8ea3);
+            margin:0;
+            padding:0;
+        }
+
+        .container {
+            margin-left:220px;
+            padding:30px;
+        }
+
+        .sidebar {
+            width:200px;
+            height:100vh;
+            background:#2e2e3f;
+            position:fixed;
+            padding:20px;
+            color:white;
+        }
+
+        .sidebar a {
+            display:block;
+            color:white;
+            padding:10px;
+            text-decoration:none;
+        }
+
+        .card {
+            background:#6c6c85;
+            padding:20px;
+            margin:10px;
+            border-radius:10px;
+            display:inline-block;
+            width:200px;
+            color:white;
+        }
+
+        .chart-box {
+            background:#6c6c85;
+            padding:20px;
+            margin-top:20px;
+            border-radius:10px;
+            text-align:center;
+            color:white;
+        }
+    </style>
 </head>
 
 <body>
@@ -11,91 +58,53 @@
 <div class="sidebar">
     <h2>Finance AI</h2>
     <a href="/">Dashboard</a>
-    <a href="{{ url_for('add_expense') }}">Add Expense</a>
+    <a href="/add">Add Expense</a>
 </div>
 
-<div class="main-content">
+<div class="container">
 
-<h1>Finance Dashboard</h1>
-{% if request.args.get('added') %}
-<div class="toast">Expense Added Successfully ✔</div>
-{% endif %}
+    <h1>Finance Dashboard</h1>
 
+    <div class="card">
+        <h3>Income</h3>
+        ₹{{ income }}
+    </div>
 
-<div class="kpi-container">
+    <div class="card">
+        <h3>Expense</h3>
+        ₹{{ expense }} %
+    </div>
 
-<div class="kpi-card">
-    <h2>Income</h2>
-    <p>₹{{ income }}</p>
-</div>
+    <div class="card">
+        <h3>Savings</h3>
+        ₹{{ savings }}
+    </div>
 
-<div class="kpi-card">
-    <h2>Expense</h2>
-    <p>₹{{ expense }}</p>
-</div>
+    <div class="card">
+        <h3>Saving Rate</h3>
+        {{ saving_rate }} %
+    </div>
 
-<div class="kpi-card">
-    <h2>Savings</h2>
-    <p>₹{{ savings }}</p>
-</div>
-<div class="kpi-card">
-    <h2>Saving Rate</h2>
-    <p>{{ saving_rate }}%</p>
-</div>
-
-</div>
-
-<div class="card">
-    <h2>Category Breakdown</h2>
-    <table>
-        <tr>
-            <th>Category</th>
-            <th>Total Spent</th>
-        </tr>
-
-        {% for category, amount in category_data %}
-        <tr>
-            <td>{{ category }}</td>
-            <td>₹{{ amount }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-
-<div class="card">
-    <h2>Expense Distribution</h2>
     <div class="chart-box">
-    <img src="/chart.png" onload="this.style.opacity=1" style="opacity:0;transition:0.5s;">
-</div>
-{% for w in warnings %}
-<div class="toast">{{ w }}</div>
-{% endfor %}
-<div class="card">
-<h2>Expense Trend: {{ trend }}%</h2>
-</div>
+        <h3>Expense Distribution</h3>
 
+        {% if pie_chart %}
+            <img src="data:image/png;base64,{{ pie_chart }}"
+                 width="350" height="350">
+        {% else %}
+            <p>No Expense Data Available</p>
+        {% endif %}
+    </div>
 
-</div>
+    <div class="chart-box">
+        <h3>Predicted Next Month Expense</h3>
+        ₹ {{ prediction }}
+    </div>
 
-<div class="card">
-    <h2>Predicted Next Month Expense: ₹{{ predicted }}</h2>
-    <h2>
-Overspending Risk:
-<span class="risk {{ risk|lower|replace(' ', '-') }}">
-    {{ risk }}
-</span>
-</h2>
-
-</div>
-
-<div class="card">
-    <h2>Smart Advice:</h2>
-    <p>{{ advice }}</p>
-</div>
-
-<a href="/add_expense">
-    <button>Add Expense</button>
-</a>
+    <div class="chart-box">
+        <h3>Overspending Risk</h3>
+        {{ risk }}
+    </div>
 
 </div>
 

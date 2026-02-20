@@ -1,9 +1,35 @@
+import matplotlib
+matplotlib.use('Agg')   # VERY IMPORTANT FOR RENDER
+import matplotlib.pyplot as plt
+import io
+import base64
 from flask import Flask, render_template, request, redirect
 import mysql.connector
 import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+def generate_pie_chart(data):
+
+    if len(data) == 0:
+        return None
+
+    labels = [x[0] for x in data]
+    values = [float(x[1]) for x in data]
+
+    plt.figure(figsize=(4,4))
+    plt.pie(values, labels=labels, autopct='%1.1f%%')
+    plt.title("Expense Distribution")
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+
+    chart = base64.b64encode(img.getvalue()).decode()
+    plt.close()
+
+    return chart
 
 from models.expense_predictor import predict_expense
 from models.risk_detector import detect_risk
@@ -33,7 +59,6 @@ def dashboard():
 
     cursor.execute("SELECT SUM(amount) FROM expenses WHERE type='expense'")
     expense = cursor.fetchone()[0] or 0
-
     savings = income - expense
 
     cursor.execute("""
@@ -42,10 +67,17 @@ def dashboard():
         WHERE type='expense'
         GROUP BY category
     """)
-    data = cursor.fetchall()
+    category_data = cursor.fetchall()
 
-    categories = [row[0] for row in data]
-    values = [float(row[1]) for row in data]
+    pie_chart = generate_pie_chart(category_data)
+
+    categories = [row[0] for row in category_data]
+    values = [float(row[1]) for row in category_data]
+    if income > 0:
+        saving_rate = round((savings/income)*100,2)
+    else:
+        saving_rate = 0
+        saving_rate=saving_rate
 
     # 📊 Chart
     if values:
@@ -72,13 +104,15 @@ def dashboard():
 
     conn.close()
 
-    return render_template("dashboard.html",
-                           income=income,
-                           expense=expense,
-                           savings=savings,
-                           prediction=prediction,
-                           risk=risk,
-                           advice=advice)
+    return render_template(
+    "dashboard.html",
+    income=income,
+    expense=expense,
+    savings=savings,
+    pie_chart=pie_chart,
+    prediction=prediction,
+    risk=risk
+)
 
 # 🟢 Add Expense Page
 @app.route('/add', methods=['GET','POST'])
