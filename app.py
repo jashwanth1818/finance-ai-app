@@ -1,175 +1,112 @@
-from flask import Flask, render_template, request, redirect, Response
+from flask import Flask, render_template, request, redirect
 import mysql.connector
-import matplotlib.pyplot as plt
-import io
 import os
-
-
+import matplotlib.pyplot as plt
 from models.expense_predictor import predict_expense
 from models.risk_detector import detect_risk
-from models.advisor import get_advice
+from models.advisor import give_advice
 
 app = Flask(__name__)
 
-import os
-import mysql.connector
-from urllib.parse import urlparse
+# ================= DATABASE CONNECTION =================
 
-url = urlparse(os.environ.get("DATABASE_URL"))
+def get_connection():
 
-db = mysql.connector.connect(
-    host=url.hostname,
-    user=url.username,
-    password=url.password,
-    database=url.path[1:],
-    port=url.port
-)
+    host = os.getenv("MYSQLHOST") or "localhost"
+    user = os.getenv("MYSQLUSER") or "root"
+    password = os.getenv("MYSQLPASSWORD") or "Jashwantha18"   # 👈 your local password
+    database = os.getenv("MYSQLDATABASE") or "financial_analysis"
+    port = os.getenv("MYSQLPORT")
 
-cursor = db.cursor()
+    if port:
+        port = int(port)
+    else:
+        port = 3306
 
-# ---------------- DASHBOARD ----------------
-@app.route("/")
+    return mysql.connector.connect(
+        host=host,
+        user=user,
+        password=password,
+        database=database,
+        port=port
+    )
+
+# ================= DASHBOARD =================
+
+@app.route('/')
 def dashboard():
 
-    # Get income
-    cursor.execute("SELECT monthly_income FROM users LIMIT 1")
-    income_result = cursor.fetchone()
-    income = income_result[0] if income_result else 0
+    conn = get_connection()
+    cursor = conn.cursor()
 
-    # Total expense
-    cursor.execute("SELECT SUM(amount) FROM expenses")
-    expense_result = cursor.fetchone()
-    total_expense = expense_result[0] if expense_result and expense_result[0] else 0
+    cursor.execute("SELECT SUM(amount) FROM expenses WHERE type='income'")
+    total_income = cursor.fetchone()[0] or 0
 
-    savings = income - total_expense
-    if income > 0:
-        saving_rate = round((savings / income) * 100, 2)
-    else:
-        saving_rate = 0
+    cursor.execute("SELECT SUM(amount) FROM expenses WHERE type='expense'")
+    total_expense = cursor.fetchone()[0] or 0
 
+    savings = total_income - total_expense
 
-    # Category breakdown
-    cursor.execute("""
-        SELECT category, SUM(amount)
-        FROM expenses
-        GROUP BY category
-    """)
+    cursor.execute("SELECT category, SUM(amount) FROM expenses WHERE type='expense' GROUP BY category")
     category_data = cursor.fetchall()
 
-    predicted = predict_expense()
-    risk = detect_risk()
-    advice = get_advice()
+    categories = [x[0] for x in category_data]
+    amounts = [float(x[1]) for x in category_data]
+
+    # CHART
+    if len(categories) > 0:
+        plt.figure()
+        plt.pie(amounts, labels=categories, autopct='%1.1f%%')
+        chart_path = os.path.join('static', 'chart.png')
+        plt.savefig(chart_path)
+        plt.close()
+
+    prediction = predict_expense(amounts)
+    risk = detect_risk(total_income, total_expense)
+    advice = give_advice(categories, amounts)
+
+    conn.close()
 
     return render_template(
         "dashboard.html",
-        income=income,
+        income=total_income,
         expense=total_expense,
         savings=savings,
-        category_data=category_data,
-        predicted=predicted,
+        breakdown=category_data,
+        prediction=prediction,
         risk=risk,
-        advice=advice,
-        saving_rate=saving_rate,
-        warnings=warnings,
-        trend=trend
-
+        advice=advice
     )
-warnings = []
 
-cursor.execute("""
-SELECT category, SUM(amount)
-FROM expenses
-GROUP BY category
-""")
+# ================= ADD EXPENSE =================
 
-expense_data = cursor.fetchall()
-
-cursor.execute("""
-SELECT category, monthly_limit
-FROM budgets
-WHERE user_id = 1
-""")
-
-budget_data = cursor.fetchall()
-
-budget_dict = dict(budget_data)
-
-for cat, amt in expense_data:
-    if cat in budget_dict and amt > budget_dict[cat]:
-        warnings.append(f"{cat} budget exceeded!")
-
-
-# ---------------- ADD EXPENSE ----------------
-@app.route("/add_expense", methods=["GET", "POST"])
+@app.route('/add', methods=['GET','POST'])
 def add_expense():
 
-    if request.method == "POST":
-        category = request.form["category"]
-        amount = request.form["amount"]
-        date = request.form["date"]
+    if request.method == 'POST':
 
-        query = """
-        INSERT INTO expenses (user_id, category, amount, date)
-        VALUES (%s, %s, %s, %s)
-        """
+        amount = request.form['amount']
+        category = request.form['category']
+        type_ = request.form['type']
 
-        cursor.execute(query, (1, category, amount, date))
-        db.commit()
+        conn = get_connection()
+        cursor = conn.cursor()
 
-        return redirect("/?added=1")
+        cursor.execute(
+            "INSERT INTO expenses(amount,category,type) VALUES(%s,%s,%s)",
+            (amount,category,type_)
+        )
 
+        conn.commit()
+        conn.close()
+
+        return redirect('/')
 
     return render_template("add_expense.html")
-cursor.execute("""
-SELECT SUM(amount)
-FROM expenses
-WHERE MONTH(date) = MONTH(CURDATE())
-""")
-this_month = cursor.fetchone()[0] or 0
 
-cursor.execute("""
-SELECT SUM(amount)
-FROM expenses
-WHERE MONTH(date) = MONTH(CURDATE()) - 1
-""")
-last_month = cursor.fetchone()[0] or 0
-
-if last_month > 0:
-    trend = round(((this_month - last_month) / last_month) * 100, 2)
-else:
-    trend = 0
-
-
-# ---------------- CHART ROUTE ----------------
-@app.route("/chart.png")
-def chart():
-
-    cursor.execute("""
-        SELECT category, SUM(amount)
-        FROM expenses
-        GROUP BY category
-    """)
-    category_data = cursor.fetchall()
-
-    categories = [row[0] for row in category_data]
-    amounts = [float(row[1]) for row in category_data]
-
-    plt.figure()
-    plt.pie(amounts, labels=categories, autopct='%1.1f%%')
-    plt.title("Expense Distribution")
-
-    img = io.BytesIO()
-    plt.savefig(img, format='png')
-    plt.close()
-    img.seek(0)
-
-    return Response(img.getvalue(), mimetype='image/png')
-
-# ---------------- RUN APP ----------------
-
+# ================= RENDER PORT FIX =================
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
-
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
 
