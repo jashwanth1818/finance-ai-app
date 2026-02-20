@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FinSight - AI Finance Advisor</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<div class="sidebar">
+    <h2>Finance AI</h2>
+    <a href="/">Dashboard</a>
+    <a href="/add_expense">Add Expense</a>
+</div>
+
+<div class="main-content">
+
+<h1>Finance Dashboard</h1>
+{% if request.args.get('added') %}
+<div class="toast">Expense Added Successfully ✔</div>
+{% endif %}
+
+
+<div class="kpi-container">
+
+<div class="kpi-card">
+    <h2>Income</h2>
+    <p>₹{{ income }}</p>
+</div>
+
+<div class="kpi-card">
+    <h2>Expense</h2>
+    <p>₹{{ expense }}</p>
+</div>
+
+<div class="kpi-card">
+    <h2>Savings</h2>
+    <p>₹{{ savings }}</p>
+</div>
+<div class="kpi-card">
+    <h2>Saving Rate</h2>
+    <p>{{ saving_rate }}%</p>
+</div>
+
+</div>
+
+<div class="card">
+    <h2>Category Breakdown</h2>
+    <table>
+        <tr>
+            <th>Category</th>
+            <th>Total Spent</th>
+        </tr>
+
+        {% for category, amount in category_data %}
+        <tr>
+            <td>{{ category }}</td>
+            <td>₹{{ amount }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h2>Expense Distribution</h2>
+    <div class="chart-box">
+    <img src="/chart.png" onload="this.style.opacity=1" style="opacity:0;transition:0.5s;">
+</div>
+{% for w in warnings %}
+<div class="toast">{{ w }}</div>
+{% endfor %}
+<div class="card">
+<h2>Expense Trend: {{ trend }}%</h2>
+</div>
+
+
+</div>
+
+<div class="card">
+    <h2>Predicted Next Month Expense: ₹{{ predicted }}</h2>
+    <h2>
+Overspending Risk:
+<span class="risk {{ risk|lower|replace(' ', '-') }}">
+    {{ risk }}
+</span>
+</h2>
+
+</div>
+
+<div class="card">
+    <h2>Smart Advice:</h2>
+    <p>{{ advice }}</p>
+</div>
+
+<a href="/add_expense">
+    <button>Add Expense</button>
+</a>
+
+</div>
+
+</body>
+</html>
+
