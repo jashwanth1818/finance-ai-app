@@ -98,6 +98,7 @@ def add_expense():
         )
 
         conn.commit()
+        cursor.close()
         conn.close()
 
         return redirect('/')
