@@ -17,14 +17,16 @@ import os
 import mysql.connector
 
 def get_connection():
-    url = urlparse(os.getenv("DATABASE_URL"))
+    db_url = os.getenv("DATABASE_URL")
+
+    url = urlparse(db_url)
 
     return mysql.connector.connect(
         host=url.hostname,
         user=url.username,
         password=url.password,
-        database=url.path[1:],
-        port=url.port
+        database=url.path.replace("/", ""),
+        port=url.port if url.port else 3306   # ⭐ FINAL FIX
     )
 
 # ================= DASHBOARD =================
