@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect
 import mysql.connector
 import os
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from models.expense_predictor import predict_expense
 from models.risk_detector import detect_risk
